@@ -1,0 +1,119 @@
+{
+  "info": {
+    "name": "Ecommerce Saga Collection",
+    "_postman_id": "replace-me",
+    "description": "Colecci\u00f3n para probar Order, Payment y Notification services.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Order Service",
+      "item": [
+        {
+          "name": "Crear orden",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"88\",\n  \"totalAmount\": 25000\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/v1/orders",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar \u00f3rdenes por cliente",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/api/v1/orders?customerId=88",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "v1",
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "88"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Service",
+      "item": [
+        {
+          "name": "Consultar pago por orderId",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8081/api/v1/payments/{{orderId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "api",
+                "v1",
+                "payments",
+                "{{orderId}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification Service",
+      "item": [
+        {
+          "name": "Consultar notificaciones por orden",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8082/api/v1/notifications?orderId={{orderId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8082",
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "orderId",
+                  "value": "{{orderId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

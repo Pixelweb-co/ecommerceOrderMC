@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentCommandService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.payment.application.service</a> &gt; <span class="el_source">PaymentCommandService.java</span></div><h1>PaymentCommandService.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.payment.application.service;
+
+import com.quind.ecommerce.payment.domain.events.PaymentEvent;
+import com.quind.ecommerce.payment.domain.model.Payment;
+import com.quind.ecommerce.payment.domain.model.PaymentStatus;
+import com.quind.ecommerce.payment.domain.ports.PaymentEventPublisherPort;
+import com.quind.ecommerce.payment.domain.ports.PaymentRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class PaymentCommandService {
+
+    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentEventPublisherPort paymentEventPublisher;
+
+    /**
+     * Paso 4 de la Saga:
+     *  - Idempotencia: si ya existe un pago &quot;finalizado OK&quot; para ese orderId, lo devuelve sin reprocesar.
+     *  - Si no existe o no está finalizado, simula el gateway, actualiza estado y emite
+     *    PAYMENT_PROCESSED / PAYMENT_FAILED a Kafka.
+     */
+    public Mono&lt;Payment&gt; processPayment(UUID orderId, BigDecimal amount) {
+<span class="fc" id="L30">        return paymentRepository.findByOrderId(orderId)</span>
+                // ✅ LAZY: solo ejecuta createNewPayment si el Mono está vacío
+<span class="fc" id="L32">                .switchIfEmpty(Mono.defer(() -&gt; createNewPayment(orderId, amount)))</span>
+<span class="fc" id="L33">                .flatMap(payment -&gt; {</span>
+                    // Idempotencia: si ya está SUCCESS, no reprocesamos ni republicamos
+<span class="fc bfc" id="L35" title="All 2 branches covered.">                    if (payment.getStatus() == PaymentStatus.SUCCESS) {</span>
+<span class="fc" id="L36">                        return Mono.just(payment);</span>
+                    }
+
+                    // --- Simulación de gateway de pago ---
+<span class="pc bpc" id="L40" title="2 of 4 branches missed.">                    boolean approved = amount != null &amp;&amp; amount.compareTo(BigDecimal.ZERO) &gt; 0;</span>
+
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">                    if (approved) {</span>
+<span class="fc" id="L43">                        payment.setStatus(PaymentStatus.SUCCESS);  // o APPROVED / PAID según tu enum</span>
+<span class="fc" id="L44">                        payment.setFailureReason(null);</span>
+<span class="fc" id="L45">                    } else {</span>
+<span class="nc" id="L46">                        payment.setStatus(PaymentStatus.FAILED);</span>
+<span class="nc" id="L47">                        payment.setFailureReason(&quot;Payment declined by gateway&quot;);</span>
+                    }
+
+<span class="fc" id="L50">                    payment.setUpdatedAt(Instant.now());</span>
+
+                    // Crear el PaymentEvent a partir de la info del pago
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                    PaymentEvent event = approved</span>
+<span class="fc" id="L54">                            ? PaymentEvent.processed(</span>
+<span class="fc" id="L55">                                    orderId,</span>
+<span class="fc" id="L56">                                    amount,</span>
+<span class="fc" id="L57">                                    payment.getStatus().name(),</span>
+<span class="fc" id="L58">                                    &quot;Payment processed successfully&quot;</span>
+<span class="fc" id="L59">                            )</span>
+<span class="nc" id="L60">                            : PaymentEvent.failed(</span>
+<span class="nc" id="L61">                                    orderId,</span>
+<span class="nc" id="L62">                                    amount,</span>
+<span class="nc" id="L63">                                    payment.getStatus().name(),</span>
+<span class="nc" id="L64">                                    payment.getFailureReason()</span>
+                            );
+
+                    // Guardar el pago y publicar el evento
+<span class="fc" id="L68">                    return paymentRepository.save(payment)</span>
+<span class="fc" id="L69">                            .flatMap(saved -&gt;</span>
+<span class="fc" id="L70">                                    paymentEventPublisher.publish(event)</span>
+<span class="fc" id="L71">                                            .thenReturn(saved)</span>
+                            );
+                });
+    }
+
+    private Mono&lt;Payment&gt; createNewPayment(UUID orderId, BigDecimal amount) {
+<span class="fc" id="L77">        Instant now = Instant.now();</span>
+
+<span class="fc" id="L79">        Payment payment = Payment.builder()</span>
+<span class="fc" id="L80">                .id(null)                             // el adapter genera el UUID</span>
+<span class="fc" id="L81">                .orderId(orderId)</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">                .amount(amount != null ? amount : BigDecimal.ZERO)</span>
+<span class="fc" id="L83">                .status(PaymentStatus.PROCESSING)     // estado inicial: PROCESSING</span>
+<span class="fc" id="L84">                .failureReason(null)</span>
+<span class="fc" id="L85">                .createdAt(now)</span>
+<span class="fc" id="L86">                .updatedAt(now)</span>
+<span class="fc" id="L87">                .build();</span>
+
+<span class="fc" id="L89">        return paymentRepository.save(payment);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,45 @@
+openapi: 3.0.1
+info:
+  title: Notification Service API
+  version: 1.0.0
+  description: API reactiva para consulta de notificaciones.
+servers:
+  - url: http://localhost:8082/api/v1
+paths:
+  /notifications:
+    get:
+      summary: Consultar notificaciones enviadas por orden
+      parameters:
+        - name: orderId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de notificaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationResponse'
+components:
+  schemas:
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        type:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time

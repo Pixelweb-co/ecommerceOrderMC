@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationRepositoryAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">notification-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.notification.infrastructure.persistence.mongo</a> &gt; <span class="el_source">NotificationRepositoryAdapter.java</span></div><h1>NotificationRepositoryAdapter.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.notification.infrastructure.persistence.mongo;
+
+import com.quind.ecommerce.notification.domain.model.Notification;
+import com.quind.ecommerce.notification.domain.ports.NotificationRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.UUID;
+
+@Component
+@RequiredArgsConstructor
+public class NotificationRepositoryAdapter implements NotificationRepositoryPort {
+
+    private final NotificationReactiveRepository repository;
+
+    @Override
+    public Mono&lt;Notification&gt; save(Notification notification) {
+
+        // Dominio usa UUID, documento usa String
+<span class="nc" id="L22">        NotificationDocument doc = NotificationDocument.builder()</span>
+                // usamos el UUID del dominio como _id en Mongo (en texto)
+<span class="nc bnc" id="L24" title="All 2 branches missed.">                .id(notification.getId() != null ? notification.getId().toString() : null)</span>
+<span class="nc" id="L25">                .orderId(notification.getOrderId().toString())  // 👈 se guarda como String</span>
+<span class="nc" id="L26">                .type(notification.getType())</span>
+<span class="nc" id="L27">                .message(notification.getMessage())</span>
+<span class="nc" id="L28">                .createdAt(notification.getCreatedAt())</span>
+<span class="nc" id="L29">                .build();</span>
+
+<span class="nc" id="L31">        return repository.save(doc)</span>
+<span class="nc" id="L32">                .map(this::toDomain);</span>
+    }
+
+    @Override
+    public Flux&lt;Notification&gt; findByOrderId(UUID orderId) {
+        // el repo de Mongo busca por String
+<span class="nc" id="L38">        return repository.findByOrderIdOrderByCreatedAtDesc(orderId.toString())</span>
+<span class="nc" id="L39">                .map(this::toDomain);</span>
+    }
+
+    private Notification toDomain(NotificationDocument doc) {
+<span class="nc" id="L43">        UUID id = null;</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (doc.getId() != null) {</span>
+            try {
+<span class="nc" id="L46">                id = UUID.fromString(doc.getId());</span>
+<span class="nc" id="L47">            } catch (IllegalArgumentException ignored) {</span>
+                // si algún día hay documentos viejos con otro formato de _id, dejamos id en null
+<span class="nc" id="L49">            }</span>
+        }
+
+<span class="nc" id="L52">        return Notification.builder()</span>
+<span class="nc" id="L53">                .id(id)</span>
+<span class="nc" id="L54">                .orderId(UUID.fromString(doc.getOrderId()))</span>
+<span class="nc" id="L55">                .type(doc.getType())</span>
+<span class="nc" id="L56">                .message(doc.getMessage())</span>
+<span class="nc" id="L57">                .createdAt(doc.getCreatedAt())</span>
+<span class="nc" id="L58">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

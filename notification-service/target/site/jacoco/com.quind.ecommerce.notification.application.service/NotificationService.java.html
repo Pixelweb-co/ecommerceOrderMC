@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">notification-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.notification.application.service</a> &gt; <span class="el_source">NotificationService.java</span></div><h1>NotificationService.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.notification.application.service;
+
+import com.quind.ecommerce.notification.domain.model.Notification;
+import com.quind.ecommerce.notification.domain.ports.NotificationRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class NotificationService {
+
+    private final NotificationRepositoryPort repository;
+
+    public Flux&lt;Notification&gt; getByOrderId(UUID orderId) {
+<span class="fc" id="L20">        return repository.findByOrderId(orderId);</span>
+    }
+
+    /**
+     * Crea una notificación de forma idempotente.
+     *
+     * Regla:
+     *  - Si ya existe una notificación con el mismo (orderId, type, message),
+     *    NO se crea una nueva; se devuelve la existente.
+     *  - Si no existe, se crea y se persiste.
+     */
+   
+     public Mono&lt;Notification&gt; createNotification(UUID orderId, String type, String message) {
+    // Idempotencia: si ya existe una con mismo orderId + type + message, la devolvemos
+<span class="fc" id="L34">    return repository.findByOrderId(orderId)</span>
+<span class="pc bpc" id="L35" title="2 of 4 branches missed.">            .filter(n -&gt; type.equals(n.getType()) &amp;&amp; message.equals(n.getMessage()))</span>
+<span class="fc" id="L36">            .next() // toma la primera coincidencia o vacío</span>
+<span class="fc" id="L37">            .switchIfEmpty(Mono.defer(() -&gt; {</span>
+<span class="fc" id="L38">                Notification notification = Notification.builder()</span>
+<span class="fc" id="L39">                        .id(UUID.randomUUID())</span>
+<span class="fc" id="L40">                        .orderId(orderId)</span>
+<span class="fc" id="L41">                        .type(type)</span>
+<span class="fc" id="L42">                        .message(message)</span>
+<span class="fc" id="L43">                        .createdAt(Instant.now())</span>
+<span class="fc" id="L44">                        .build();</span>
+
+<span class="fc" id="L46">                return repository.save(notification);</span>
+            }));
+}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

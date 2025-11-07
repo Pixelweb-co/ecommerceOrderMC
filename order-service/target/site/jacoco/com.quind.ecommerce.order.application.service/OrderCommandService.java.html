@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderCommandService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">order-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.order.application.service</a> &gt; <span class="el_source">OrderCommandService.java</span></div><h1>OrderCommandService.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.order.application.service;
+
+import com.quind.ecommerce.order.application.command.CancelOrderCommand;
+import com.quind.ecommerce.order.application.command.CreateOrderCommand;
+import com.quind.ecommerce.order.domain.events.OrderEvent;
+import com.quind.ecommerce.order.domain.events.OrderEventType;
+import com.quind.ecommerce.order.domain.model.Order;
+import com.quind.ecommerce.order.domain.model.OrderStatus;
+import com.quind.ecommerce.order.domain.ports.DomainEventPublisherPort;
+import com.quind.ecommerce.order.domain.ports.OrderEventStorePort;
+import com.quind.ecommerce.order.domain.ports.OrderRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class OrderCommandService {
+
+    private final OrderRepositoryPort orderRepository;
+    private final OrderEventStorePort eventStore;
+    private final DomainEventPublisherPort publisher;
+
+    /**
+     * Paso 1 + Paso 2 de la Saga:
+     *  - Crea la orden PENDING y emite ORDER_CREATED
+     *  - Simula ValidateInventory y emite ORDER_CONFIRMED u ORDER_FAILED
+     */
+    public Mono&lt;Order&gt; createOrder(CreateOrderCommand command) {
+<span class="fc" id="L37">        Order order = Order.builder()</span>
+<span class="fc" id="L38">                .id(UUID.randomUUID())</span>
+<span class="fc" id="L39">                .customerId(command.getCustomerId())</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">                .totalAmount(command.getTotalAmount() != null ? command.getTotalAmount() : BigDecimal.ZERO)</span>
+<span class="fc" id="L41">                .status(OrderStatus.PENDING)</span>
+<span class="fc" id="L42">                .createdAt(Instant.now())</span>
+<span class="fc" id="L43">                .updatedAt(Instant.now())</span>
+<span class="fc" id="L44">                .build();</span>
+
+        // Evento de creación de orden
+<span class="fc" id="L47">        OrderEvent createdEvent = OrderEvent.builder()</span>
+<span class="fc" id="L48">                .id(UUID.randomUUID())</span>
+<span class="fc" id="L49">                .orderId(order.getId())</span>
+<span class="fc" id="L50">                .type(OrderEventType.ORDER_CREATED)</span>
+<span class="fc" id="L51">                .occurredAt(Instant.now())</span>
+<span class="fc" id="L52">                .payload(Map.of(</span>
+<span class="fc" id="L53">                        &quot;customerId&quot;, order.getCustomerId(),</span>
+<span class="fc" id="L54">                        &quot;totalAmount&quot;, order.getTotalAmount(),</span>
+<span class="fc" id="L55">                        &quot;status&quot;, order.getStatus().name()</span>
+                ))
+<span class="fc" id="L57">                .build();</span>
+
+        // Guardamos la orden, registramos ORDER_CREATED y luego ejecutamos ValidateInventory
+<span class="fc" id="L60">        return orderRepository.save(order)</span>
+<span class="fc" id="L61">                .flatMap(savedOrder -&gt;</span>
+<span class="fc" id="L62">                        eventStore.append(createdEvent)</span>
+<span class="fc" id="L63">                                .then(publisher.publish(createdEvent))</span>
+<span class="fc" id="L64">                                .then(validateInventoryAndConfirm(savedOrder))</span>
+                );
+    }
+
+    /**
+     * Cancelar orden:
+     *  - 404 si no existe
+     *  - 409 si no está en PENDING o CONFIRMED
+     *  - ORDER_CANCELLED si la cancelación es válida
+     */
+    public Mono&lt;Order&gt; cancelOrder(CancelOrderCommand command) {
+<span class="fc" id="L75">        return orderRepository.findById(command.getOrderId())</span>
+                // Si no existe → 404
+<span class="fc" id="L77">                .switchIfEmpty(Mono.error(new ResponseStatusException(</span>
+<span class="fc" id="L78">                        HttpStatus.NOT_FOUND,</span>
+<span class="fc" id="L79">                        &quot;Order not found&quot;</span>
+                )))
+<span class="fc" id="L81">                .flatMap(order -&gt; {</span>
+                    // Solo se puede cancelar si está en PENDING o CONFIRMED
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                    if (order.getStatus() != OrderStatus.PENDING</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                            &amp;&amp; order.getStatus() != OrderStatus.CONFIRMED) {</span>
+<span class="fc" id="L85">                        return Mono.error(new ResponseStatusException(</span>
+<span class="fc" id="L86">                                HttpStatus.CONFLICT,</span>
+<span class="fc" id="L87">                                &quot;Cannot cancel order in status &quot; + order.getStatus()</span>
+                        ));
+                    }
+
+                    // Lógica de dominio
+<span class="fc" id="L92">                    order.cancel();</span>
+
+<span class="fc" id="L94">                    OrderEvent event = OrderEvent.builder()</span>
+<span class="fc" id="L95">                            .id(UUID.randomUUID())</span>
+<span class="fc" id="L96">                            .orderId(order.getId())</span>
+<span class="fc" id="L97">                            .type(OrderEventType.ORDER_CANCELLED)</span>
+<span class="fc" id="L98">                            .occurredAt(Instant.now())</span>
+<span class="fc" id="L99">                            .payload(Map.of(</span>
+<span class="fc" id="L100">                                    &quot;status&quot;, order.getStatus().name()</span>
+                            ))
+<span class="fc" id="L102">                            .build();</span>
+
+<span class="fc" id="L104">                    return orderRepository.save(order)</span>
+<span class="fc" id="L105">                            .flatMap(saved -&gt;</span>
+<span class="fc" id="L106">                                    eventStore.append(event)</span>
+<span class="fc" id="L107">                                            .then(publisher.publish(event))</span>
+<span class="fc" id="L108">                                            .thenReturn(saved)</span>
+                            );
+                });
+    }
+
+    /**
+     * Paso 2 de la Saga: ValidateInventory
+     *  - Si hay inventario → CONFIRMED + ORDER_CONFIRMED
+     *  - Si no → FAILED + ORDER_FAILED
+     *
+     * Por ahora la validación es simulada (puedes meter reglas según totalAmount, stock, etc.)
+     */
+    private Mono&lt;Order&gt; validateInventoryAndConfirm(Order order) {
+        // 🔧 REGLA SIMULADA:
+        // Por ahora asumimos que siempre hay inventario.
+<span class="fc" id="L123">        boolean hasInventory = true;</span>
+
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (hasInventory) {</span>
+            // PENDING -&gt; CONFIRMED
+<span class="fc" id="L127">            order.setStatus(OrderStatus.CONFIRMED);</span>
+<span class="fc" id="L128">            order.setUpdatedAt(Instant.now());</span>
+
+<span class="fc" id="L130">            OrderEvent confirmedEvent = OrderEvent.builder()</span>
+<span class="fc" id="L131">                    .id(UUID.randomUUID())</span>
+<span class="fc" id="L132">                    .orderId(order.getId())</span>
+<span class="fc" id="L133">                    .type(OrderEventType.ORDER_CONFIRMED)</span>
+<span class="fc" id="L134">                    .occurredAt(Instant.now())</span>
+<span class="fc" id="L135">                    .payload(Map.of(</span>
+<span class="fc" id="L136">                            &quot;status&quot;, order.getStatus().name(),</span>
+<span class="fc" id="L137">                            &quot;reason&quot;, &quot;Inventory validated and reserved&quot;,</span>
+<span class="fc" id="L138">                            &quot;totalAmount&quot;, order.getTotalAmount()</span>
+                    ))
+<span class="fc" id="L140">                    .build();</span>
+
+<span class="fc" id="L142">            return orderRepository.save(order)</span>
+<span class="fc" id="L143">                    .flatMap(saved -&gt;</span>
+<span class="fc" id="L144">                            eventStore.append(confirmedEvent)</span>
+<span class="fc" id="L145">                                    .then(publisher.publish(confirmedEvent))</span>
+<span class="fc" id="L146">                                    .thenReturn(saved)</span>
+                    );
+        } else {
+            // PENDING -&gt; FAILED (por inventario)
+<span class="nc" id="L150">            order.setStatus(OrderStatus.FAILED);</span>
+<span class="nc" id="L151">            order.setUpdatedAt(Instant.now());</span>
+
+<span class="nc" id="L153">            OrderEvent failedEvent = OrderEvent.builder()</span>
+<span class="nc" id="L154">                    .id(UUID.randomUUID())</span>
+<span class="nc" id="L155">                    .orderId(order.getId())</span>
+<span class="nc" id="L156">                    .type(OrderEventType.ORDER_FAILED)</span>
+<span class="nc" id="L157">                    .occurredAt(Instant.now())</span>
+<span class="nc" id="L158">                    .payload(Map.of(</span>
+<span class="nc" id="L159">                            &quot;status&quot;, order.getStatus().name(),</span>
+<span class="nc" id="L160">                            &quot;reason&quot;, &quot;Inventory not available&quot;</span>
+                    ))
+<span class="nc" id="L162">                    .build();</span>
+
+<span class="nc" id="L164">            return orderRepository.save(order)</span>
+<span class="nc" id="L165">                    .flatMap(saved -&gt;</span>
+<span class="nc" id="L166">                            eventStore.append(failedEvent)</span>
+<span class="nc" id="L167">                                    .then(publisher.publish(failedEvent))</span>
+<span class="nc" id="L168">                                    .thenReturn(saved)</span>
+                    );
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

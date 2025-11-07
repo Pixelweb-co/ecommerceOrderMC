@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Order.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">order-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.order.domain.model</a> &gt; <span class="el_source">Order.java</span></div><h1>Order.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.order.domain.model;
+
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.UUID;
+
+@Getter
+@Setter
+@Builder
+public class Order {
+
+    private UUID id;
+    private String customerId;
+    private BigDecimal totalAmount;
+    private OrderStatus status;
+    private Instant createdAt;
+    private Instant updatedAt;
+
+    public void markPending() {
+<span class="nc" id="L24">        this.status = OrderStatus.PENDING;</span>
+<span class="nc" id="L25">        this.createdAt = Instant.now();</span>
+<span class="nc" id="L26">        this.updatedAt = this.createdAt;</span>
+<span class="nc" id="L27">    }</span>
+
+    public void confirm() {
+<span class="nc bnc" id="L30" title="All 2 branches missed.">        if (status != OrderStatus.PENDING) {</span>
+<span class="nc" id="L31">            throw new IllegalStateException(&quot;Order can only be CONFIRMED from PENDING status&quot;);</span>
+        }
+<span class="nc" id="L33">        this.status = OrderStatus.CONFIRMED;</span>
+<span class="nc" id="L34">        this.updatedAt = Instant.now();</span>
+<span class="nc" id="L35">    }</span>
+
+    public void startPaymentProcessing() {
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (status != OrderStatus.CONFIRMED) {</span>
+<span class="nc" id="L39">            throw new IllegalStateException(&quot;Order can only go to PAYMENT_PROCESSING from CONFIRMED status&quot;);</span>
+        }
+<span class="nc" id="L41">        this.status = OrderStatus.PAYMENT_PROCESSING;</span>
+<span class="nc" id="L42">        this.updatedAt = Instant.now();</span>
+<span class="nc" id="L43">    }</span>
+
+    public void markPaid() {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        if (status != OrderStatus.PAYMENT_PROCESSING) {</span>
+<span class="nc" id="L47">            throw new IllegalStateException(&quot;Order can only be PAID from PAYMENT_PROCESSING status&quot;);</span>
+        }
+<span class="nc" id="L49">        this.status = OrderStatus.PAID;</span>
+<span class="nc" id="L50">        this.updatedAt = Instant.now();</span>
+<span class="nc" id="L51">    }</span>
+
+    public void cancel() {
+<span class="pc bpc" id="L54" title="3 of 4 branches missed.">        if (status != OrderStatus.PENDING &amp;&amp; status != OrderStatus.CONFIRMED) {</span>
+<span class="nc" id="L55">            throw new IllegalStateException(&quot;Only PENDING or CONFIRMED orders can be cancelled&quot;);</span>
+        }
+<span class="fc" id="L57">        this.status = OrderStatus.CANCELLED;</span>
+<span class="fc" id="L58">        this.updatedAt = Instant.now();</span>
+<span class="fc" id="L59">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

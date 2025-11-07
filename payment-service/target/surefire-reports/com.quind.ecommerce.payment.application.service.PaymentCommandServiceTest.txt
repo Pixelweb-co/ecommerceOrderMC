@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.quind.ecommerce.payment.application.service.PaymentCommandServiceTest
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.674 s -- in com.quind.ecommerce.payment.application.service.PaymentCommandServiceTest

@@ -1,0 +1,15 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+payment-service,com.quind.ecommerce.payment.domain.events,PaymentEvent,101,19,18,0,32,10,13,1,4,1
+payment-service,com.quind.ecommerce.payment.domain.events,PaymentEventType,0,24,0,0,0,3,0,1,0,1
+payment-service,com.quind.ecommerce.payment.infrastructure.persistence.postgres,PaymentEntity,32,0,4,0,12,0,5,0,3,0
+payment-service,com.quind.ecommerce.payment.infrastructure.persistence.postgres,PaymentRepositoryAdapter,89,0,6,0,29,0,6,0,3,0
+payment-service,com.quind.ecommerce.payment.infrastructure.web.mapper,PaymentMapper,32,0,2,0,12,0,3,0,2,0
+payment-service,com.quind.ecommerce.payment,PaymentServiceApplication,8,0,0,0,3,0,2,0,2,0
+payment-service,com.quind.ecommerce.payment.application.service,PaymentQueryService,5,0,0,0,1,0,1,0,1,0
+payment-service,com.quind.ecommerce.payment.application.service,PaymentCommandService,16,103,5,7,7,33,5,6,0,5
+payment-service,com.quind.ecommerce.payment.infrastructure.messaging.kafka,OrderEventsKafkaListener,82,0,2,0,20,0,5,0,4,0
+payment-service,com.quind.ecommerce.payment.infrastructure.messaging.kafka,OrderEventMessage,48,0,10,0,14,0,6,0,1,0
+payment-service,com.quind.ecommerce.payment.infrastructure.messaging.kafka,PaymentKafkaEventPublisher,70,0,4,0,16,0,6,0,4,0
+payment-service,com.quind.ecommerce.payment.infrastructure.web,PaymentController,30,0,0,0,7,0,3,0,3,0
+payment-service,com.quind.ecommerce.payment.domain.model,Payment,8,0,2,0,1,0,2,0,1,0
+payment-service,com.quind.ecommerce.payment.domain.model,PaymentStatus,0,44,0,0,0,5,0,1,0,1

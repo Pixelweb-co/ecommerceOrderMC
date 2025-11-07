@@ -1,0 +1,16 @@
+com\quind\ecommerce\notification\infrastructure\messaging\PaymentEventMessage.class
+com\quind\ecommerce\notification\infrastructure\persistence\mongo\NotificationReactiveRepository.class
+com\quind\ecommerce\notification\infrastructure\messaging\KafkaNotificationListener.class
+com\quind\ecommerce\notification\domain\model\Notification$NotificationBuilder.class
+com\quind\ecommerce\notification\infrastructure\persistence\mongo\NotificationDocument.class
+com\quind\ecommerce\notification\infrastructure\web\dto\NotificationResponse.class
+com\quind\ecommerce\notification\infrastructure\web\mapper\NotificationMapper.class
+com\quind\ecommerce\notification\infrastructure\persistence\mongo\NotificationDocument$NotificationDocumentBuilder.class
+com\quind\ecommerce\notification\infrastructure\web\NotificationController.class
+com\quind\ecommerce\notification\NotificationServiceApplication.class
+com\quind\ecommerce\notification\domain\model\Notification.class
+com\quind\ecommerce\notification\application\service\NotificationService.class
+com\quind\ecommerce\notification\infrastructure\web\dto\NotificationResponse$NotificationResponseBuilder.class
+com\quind\ecommerce\notification\infrastructure\messaging\OrderEventMessage.class
+com\quind\ecommerce\notification\domain\ports\NotificationRepositoryPort.class
+com\quind\ecommerce\notification\infrastructure\persistence\mongo\NotificationRepositoryAdapter.class

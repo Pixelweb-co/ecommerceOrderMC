@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OrderController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">order-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.order.infrastructure.web</a> &gt; <span class="el_source">OrderController.java</span></div><h1>OrderController.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.order.infrastructure.web;
+
+import com.quind.ecommerce.order.application.command.CancelOrderCommand;
+import com.quind.ecommerce.order.application.command.CreateOrderCommand;
+import com.quind.ecommerce.order.application.service.OrderCommandService;
+import com.quind.ecommerce.order.application.service.OrderQueryService;
+import com.quind.ecommerce.order.infrastructure.web.dto.CreateOrderRequest;
+import com.quind.ecommerce.order.infrastructure.web.dto.OrderEventResponse;
+import com.quind.ecommerce.order.infrastructure.web.dto.OrderResponse;
+import com.quind.ecommerce.order.infrastructure.web.mapper.OrderMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping(&quot;/api/v1/orders&quot;)
+@RequiredArgsConstructor
+@Tag(name = &quot;Orders&quot;, description = &quot;Order management API&quot;)
+public class OrderController {
+
+    private final OrderCommandService commandService;
+    private final OrderQueryService queryService;
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = &quot;Crear nueva orden&quot;)
+    public Mono&lt;OrderResponse&gt; createOrder(@Valid @RequestBody CreateOrderRequest request) {
+<span class="nc" id="L35">        CreateOrderCommand command = CreateOrderCommand.builder()</span>
+<span class="nc" id="L36">                .customerId(request.getCustomerId())</span>
+<span class="nc" id="L37">                .totalAmount(request.getTotalAmount())</span>
+<span class="nc" id="L38">                .build();</span>
+
+<span class="nc" id="L40">        return commandService.createOrder(command)</span>
+<span class="nc" id="L41">                .map(OrderMapper::toResponse);</span>
+    }
+
+    @GetMapping(&quot;/{id}&quot;)
+    @Operation(summary = &quot;Obtener orden por ID&quot;)
+    public Mono&lt;OrderResponse&gt; getOrderById(@PathVariable(name = &quot;id&quot;) UUID id) {
+<span class="nc" id="L47">        return queryService.getOrderById(id)</span>
+<span class="nc" id="L48">                .map(OrderMapper::toResponse);</span>
+    }
+
+    @GetMapping
+    @Operation(summary = &quot;Listar órdenes del cliente&quot;)
+    public Flux&lt;OrderResponse&gt; getOrdersByCustomer(
+            @RequestParam(name = &quot;customerId&quot;) String customerId,
+            @RequestParam(name = &quot;page&quot;, defaultValue = &quot;0&quot;) int page,
+            @RequestParam(name = &quot;size&quot;, defaultValue = &quot;10&quot;) int size
+    ) {
+<span class="nc" id="L58">        return queryService.getOrdersByCustomer(customerId, page, size)</span>
+<span class="nc" id="L59">                .map(OrderMapper::toResponse);</span>
+    }
+
+    @PatchMapping(&quot;/{id}/cancel&quot;)
+    @Operation(summary = &quot;Cancelar orden PENDING o CONFIRMED&quot;)
+    public Mono&lt;OrderResponse&gt; cancelOrder(@PathVariable(name = &quot;id&quot;) UUID id) {
+<span class="nc" id="L65">        CancelOrderCommand command = CancelOrderCommand.builder()</span>
+<span class="nc" id="L66">                .orderId(id)</span>
+<span class="nc" id="L67">                .build();</span>
+
+<span class="nc" id="L69">        return commandService.cancelOrder(command)</span>
+<span class="nc" id="L70">                .map(OrderMapper::toResponse);</span>
+    }
+
+    @GetMapping(&quot;/{id}/events&quot;)
+    @Operation(summary = &quot;Historial de eventos de la orden (Event Sourcing)&quot;)
+    public Flux&lt;OrderEventResponse&gt; getOrderEvents(@PathVariable(name = &quot;id&quot;) UUID id) {
+<span class="nc" id="L76">        return queryService.getOrderEvents(id)</span>
+<span class="nc" id="L77">                .map(OrderMapper::toResponse);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

@@ -1,0 +1,65 @@
+openapi: 3.0.1
+info:
+  title: Payment Service API
+  version: 1.0.0
+  description: API reactiva para procesamiento de pagos.
+servers:
+  - url: http://localhost:8081/api/v1
+paths:
+  /payments/{orderId}:
+    get:
+      summary: Consultar estado de pago por orderId
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Pago encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        '404':
+          description: Pago no encontrado
+  /payments/{orderId}/retry:
+    post:
+      summary: Reintentar procesamiento de pago
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Reintento aceptado
+        '404':
+          description: Pago no encontrado
+components:
+  schemas:
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        status:
+          type: string
+        failureReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentEventMessage.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">order-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.order.infrastructure.messaging.kafka</a> &gt; <span class="el_source">PaymentEventMessage.java</span></div><h1>PaymentEventMessage.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.order.infrastructure.messaging.kafka;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+@Data
+public class PaymentEventMessage {
+
+    private UUID id;
+    private UUID orderId;
+    private String type;               // PAYMENT_PROCESSED / PAYMENT_FAILED
+    private Instant occurredAt;
+    private Map&lt;String, Object&gt; payload;
+
+    // Estos campos vienen también a nivel raíz (según el log del publisher)
+    private String message;
+    private String status;             // SUCCESS / FAILED / etc.
+    private BigDecimal amount;
+
+    // Helpers por si quieres leerlos siempre desde payload
+    public BigDecimal getResolvedAmount() {
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (amount != null) {</span>
+<span class="nc" id="L27">            return amount;</span>
+        }
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (payload == null) return BigDecimal.ZERO;</span>
+<span class="nc" id="L30">        Object value = payload.get(&quot;amount&quot;);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (value instanceof BigDecimal big) return big;</span>
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (value instanceof Number n) return BigDecimal.valueOf(n.doubleValue());</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">        if (value instanceof String s) {</span>
+<span class="nc" id="L34">            try { return new BigDecimal(s); } catch (NumberFormatException e) { return BigDecimal.ZERO; }</span>
+        }
+<span class="nc" id="L36">        return BigDecimal.ZERO;</span>
+    }
+
+    public String getResolvedStatus() {
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (status != null) return status;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (payload == null) return null;</span>
+<span class="nc" id="L42">        Object value = payload.get(&quot;status&quot;);</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        return value != null ? value.toString() : null;</span>
+    }
+
+    public String getResolvedMessage() {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (message != null) return message;</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (payload == null) return null;</span>
+<span class="nc" id="L49">        Object value = payload.get(&quot;message&quot;);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        return value != null ? value.toString() : null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

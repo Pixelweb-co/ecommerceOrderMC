@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentRepositoryAdapter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">payment-service</a> &gt; <a href="index.source.html" class="el_package">com.quind.ecommerce.payment.infrastructure.persistence.postgres</a> &gt; <span class="el_source">PaymentRepositoryAdapter.java</span></div><h1>PaymentRepositoryAdapter.java</h1><pre class="source lang-java linenums">package com.quind.ecommerce.payment.infrastructure.persistence.postgres;
+
+import com.quind.ecommerce.payment.domain.model.Payment;
+import com.quind.ecommerce.payment.domain.model.PaymentStatus;
+import com.quind.ecommerce.payment.domain.ports.PaymentRepositoryPort;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Component
+@RequiredArgsConstructor
+public class PaymentRepositoryAdapter implements PaymentRepositoryPort {
+
+    private final PaymentR2dbcRepository repository;
+
+    @Override
+    public Mono&lt;Payment&gt; save(Payment payment) {
+
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        boolean isNew = (payment.getId() == null);</span>
+
+<span class="nc bnc" id="L24" title="All 2 branches missed.">        UUID id = isNew ? UUID.randomUUID() : payment.getId();</span>
+<span class="nc" id="L25">        Instant now = Instant.now();</span>
+
+        // Si el dominio ya envía createdAt, lo respetamos; si no, usamos &quot;now&quot;
+<span class="nc bnc" id="L28" title="All 2 branches missed.">        Instant createdAt = payment.getCreatedAt() != null</span>
+<span class="nc" id="L29">                ? payment.getCreatedAt()</span>
+<span class="nc" id="L30">                : now;</span>
+
+<span class="nc" id="L32">        PaymentEntity entity = PaymentEntity.builder()</span>
+<span class="nc" id="L33">                .id(id)                                  // nunca va null</span>
+<span class="nc" id="L34">                .orderId(payment.getOrderId())</span>
+<span class="nc" id="L35">                .amount(payment.getAmount())</span>
+<span class="nc" id="L36">                .status(payment.getStatus().name())</span>
+<span class="nc" id="L37">                .failureReason(payment.getFailureReason())</span>
+<span class="nc" id="L38">                .createdAt(createdAt)                   // se conserva si venía del dominio</span>
+<span class="nc" id="L39">                .updatedAt(now)                         // siempre refrescamos updatedAt</span>
+<span class="nc" id="L40">                .isNew(isNew)                           // le dice a Spring: INSERT si es nuevo, UPDATE si no</span>
+<span class="nc" id="L41">                .build();</span>
+
+<span class="nc" id="L43">        return repository.save(entity)</span>
+<span class="nc" id="L44">                .map(this::toDomain);</span>
+    }
+
+    @Override
+    public Mono&lt;Payment&gt; findByOrderId(UUID orderId) {
+<span class="nc" id="L49">        return repository.findByOrderId(orderId)</span>
+<span class="nc" id="L50">                .map(this::toDomain);</span>
+    }
+
+    private Payment toDomain(PaymentEntity entity) {
+<span class="nc" id="L54">        return Payment.builder()</span>
+<span class="nc" id="L55">                .id(entity.getId())</span>
+<span class="nc" id="L56">                .orderId(entity.getOrderId())</span>
+<span class="nc" id="L57">                .amount(entity.getAmount())</span>
+<span class="nc" id="L58">                .status(PaymentStatus.valueOf(entity.getStatus()))</span>
+<span class="nc" id="L59">                .failureReason(entity.getFailureReason())</span>
+<span class="nc" id="L60">                .createdAt(entity.getCreatedAt())</span>
+<span class="nc" id="L61">                .updatedAt(entity.getUpdatedAt())</span>
+<span class="nc" id="L62">                .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
