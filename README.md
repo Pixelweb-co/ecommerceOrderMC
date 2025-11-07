@@ -46,14 +46,8 @@ Trade-offs:
 Desde la raíz del proyecto:
 
 ```bash
-docker-compose up --build
-```
-
-O usando elbo script:
-
-```bash
 # Linux / Mac
-./scripts/install.sh
+./install.sh
 
 # Windows
 install.bat
