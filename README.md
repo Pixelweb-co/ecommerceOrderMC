@@ -53,7 +53,7 @@ Desde la raíz del proyecto:
 docker-compose up --build
 ```
 
-O usando el script:
+O usando elbo script:
 
 ```bash
 # Linux / Mac
@@ -96,9 +96,6 @@ Cobertura con JaCoCo (por servicio):
 - `PATCH /orders/{id}/cancel` – Cancelar orden
 - `GET /orders/{id}/events` – Historial (event sourcing)
 
-Swagger/OpenAPI:
-- `http://localhost:8080/swagger-ui.html` (o ruta equivalente según config)
-
 ### Payment Service (http://localhost:8081/api/v1)
 
 - `GET /payments/{orderId}` – Estado de pago
@@ -108,13 +105,36 @@ Swagger/OpenAPI:
 
 - `GET /notifications?orderId=X` – Notificaciones por orden
 
-## 7. Documentación adicional
+## 7. Documentación de APIs (Swagger / OpenAPI)
+
+Cada servicio expone su documentación OpenAPI con Swagger UI (usando springdoc-openapi):
+
+- **Order Service**  
+  - Swagger UI: `http://localhost:8080/swagger-ui.html` (o `http://localhost:8080/swagger-ui/index.html` según config)  
+  - OpenAPI JSON/YAML: `http://localhost:8080/v3/api-docs`
+
+- **Payment Service**  
+  - Swagger UI: `http://localhost:8081/swagger-ui.html` (o `http://localhost:8081/swagger-ui/index.html`)  
+  - OpenAPI JSON/YAML: `http://localhost:8081/v3/api-docs`
+
+- **Notification Service**  
+  - Swagger UI: `http://localhost:8082/swagger-ui.html` (o `http://localhost:8082/swagger-ui/index.html`)  
+  - OpenAPI JSON/YAML: `http://localhost:8082/v3/api-docs`
+
+Además, en `docs/api/` se incluyen:
+
+- `order-service-openapi.yaml`
+- `payment-service-openapi.yaml`
+- `notification-service-openapi.yaml`
+- `postman-collection.json`
+
+## 8. Documentación adicional
 
 - `docs/ADRs/` – Architecture Decision Records
 - `docs/architecture/` – Diagramas (componentes, eventos, estados, DB)
 - `docs/api/` – OpenAPI + Postman collection
 
-## 8. Mejoras futuras
+## 9. Mejoras futuras
 
 - Gateway con Spring Cloud Gateway.
 - Outbox Pattern para consistencia Order ↔ Kafka.
