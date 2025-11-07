@@ -41,11 +41,7 @@ Trade-offs:
 
 ## 4. Instalación y ejecución
 
-### 4.1. Variables de entorno
-
-Copiar `.env.example` a `.env` y ajustar si es necesario (puertos, credenciales, etc.).
-
-### 4.2. Ejecutar con Docker Compose
+### 4.1. Ejecutar con Docker Compose
 
 Desde la raíz del proyecto:
 
